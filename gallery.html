@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ELURÉ Aesthetic Clinic | Gallery</title>
+    <meta name="description" content="Browse the ELURÉ Aesthetic Clinic gallery.">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Raleway:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #7a5a08;
+            --primary-light: #d4a843;
+            --primary-dark: #5c4306;
+            --secondary-color: #1a1a2e;
+            --accent-color: #e8d5b7;
+            --white: #ffffff;
+            --gradient: linear-gradient(135deg, #7a5a08 0%, #b8860b 100%);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Raleway', sans-serif;
+            background: var(--secondary-color);
+            color: var(--white);
+            overflow: hidden;
+        }
+
+        /* ===== Header ===== */
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 18px 40px;
+            background: linear-gradient(to bottom, rgba(26, 26, 46, 0.85), rgba(26, 26, 46, 0));
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: var(--white);
+        }
+
+        .brand img {
+            height: 48px;
+            width: auto;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .brand-text {
+            font-family: 'Playfair Display', serif;
+            font-size: 20px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            line-height: 1.2;
+        }
+
+        .brand-text span { color: var(--primary-light); font-size: 13px; display: block; }
+
+        .back-home {
+            color: var(--white);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            padding: 10px 20px;
+            border-radius: 50px;
+            transition: all 0.3s ease;
+        }
+
+        .back-home:hover {
+            background: var(--gradient);
+            border-color: transparent;
+        }
+
+        /* ===== Slideshow ===== */
+        .slideshow {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        .slide {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            transition: opacity 1s ease;
+            z-index: 1;
+        }
+
+        .slide.active { opacity: 1; z-index: 2; }
+
+        .slide img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background: var(--secondary-color);
+            display: block;
+        }
+
+        .slide-caption {
+            position: absolute;
+            bottom: 90px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            background: rgba(26, 26, 46, 0.7);
+            backdrop-filter: blur(8px);
+            padding: 12px 28px;
+            border-radius: 50px;
+            font-size: 15px;
+            letter-spacing: 0.5px;
+            opacity: 0;
+            transition: opacity 0.6s ease;
+            white-space: nowrap;
+        }
+
+        .slide.active .slide-caption { opacity: 1; }
+
+        .slide-caption strong {
+            font-family: 'Playfair Display', serif;
+            font-size: 17px;
+            color: var(--primary-light);
+            margin-right: 8px;
+        }
+
+        /* ===== Controls ===== */
+        .nav-arrow {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 50;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            background: rgba(26, 26, 46, 0.4);
+            color: var(--white);
+            font-size: 22px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(6px);
+        }
+
+        .nav-arrow:hover {
+            background: var(--gradient);
+            border-color: transparent;
+            transform: translateY(-50%) scale(1.08);
+        }
+
+        .prev { left: 30px; }
+        .next { right: 30px; }
+
+        /* ===== Bottom Bar ===== */
+        .controls {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            background: rgba(26, 26, 46, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 12px 26px;
+            border-radius: 50px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .controls button {
+            background: none;
+            border: none;
+            color: var(--white);
+            font-size: 20px;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .controls button:hover { background: rgba(212, 168, 67, 0.2); color: var(--primary-light); }
+
+        .controls .counter {
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 2px;
+            min-width: 70px;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .controls .counter span { color: var(--primary-light); }
+
+        .dots {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.35);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            padding: 0;
+        }
+
+        .dot.active {
+            background: var(--primary-light);
+            transform: scale(1.4);
+        }
+
+        .dot:hover { background: var(--white); }
+
+        .fullscreen-btn { margin-left: 4px; }
+
+        /* ===== Progress bar ===== */
+        .progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 3px;
+            z-index: 200;
+            background: var(--gradient);
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+
+        /* ===== Keyboard hint ===== */
+        .hint {
+            position: fixed;
+            bottom: 110px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 40;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.45);
+            letter-spacing: 1px;
+        }
+
+        .hint i { margin: 0 3px; }
+
+        @media (max-width: 768px) {
+            header { padding: 14px 20px; }
+            .brand-text { font-size: 17px; }
+            .back-home { font-size: 12px; padding: 8px 14px; }
+            .nav-arrow { width: 44px; height: 44px; font-size: 18px; }
+            .prev { left: 12px; }
+            .next { right: 12px; }
+            .slide-caption { font-size: 13px; padding: 10px 18px; white-space: normal; max-width: 85%; bottom: 120px; }
+            .controls { padding: 10px 18px; gap: 16px; bottom: 20px; }
+            .hint { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="progress" id="progress"></div>
+
+    <header>
+        <a href="index.html" class="brand">
+            <img src="images/logo.jpg" alt="ELURÉ Aesthetic Clinic">
+            <div class="brand-text">ELURÉ<span>Aesthetic Clinic</span></div>
+        </a>
+        <a href="index.html" class="back-home"><i class="fas fa-arrow-left"></i> Back to Website</a>
+    </header>
+
+    <div class="slideshow" id="slideshow">
+        <div class="slide active">
+            <img src="images/gallery/slide-1.jpg" alt="ELURÉ Aesthetic Clinic photo 1">
+            <div class="slide-caption"><strong>ELURÉ Aesthetic Clinic</strong> Moments</div>
+        </div>
+        <div class="slide">
+            <img src="images/gallery/slide-2.jpg" alt="ELURÉ Aesthetic Clinic photo 2">
+            <div class="slide-caption"><strong>ELURÉ Aesthetic Clinic</strong> Moments</div>
+        </div>
+        <div class="slide">
+            <img src="images/gallery/slide-3.jpg" alt="ELURÉ Aesthetic Clinic photo 3">
+            <div class="slide-caption"><strong>ELURÉ Aesthetic Clinic</strong> Moments</div>
+        </div>
+        <div class="slide">
+            <img src="images/gallery/slide-4.jpg" alt="ELURÉ Aesthetic Clinic photo 4">
+            <div class="slide-caption"><strong>ELURÉ Aesthetic Clinic</strong> Moments</div>
+        </div>
+        <div class="slide">
+            <img src="images/gallery/slide-5.jpg" alt="ELURÉ Aesthetic Clinic photo 5">
+            <div class="slide-caption"><strong>ELURÉ Aesthetic Clinic</strong> Moments</div>
+        </div>
+        <div class="slide">
+            <img src="images/gallery/slide-6.jpg" alt="ELURÉ Aesthetic Clinic photo 6">
+            <div class="slide-caption"><strong>ELURÉ Aesthetic Clinic</strong> Moments</div>
+        </div>
+        <div class="slide">
+            <img src="images/gallery/slide-7.jpg" alt="ELURÉ Aesthetic Clinic photo 7">
+            <div class="slide-caption"><strong>ELURÉ Aesthetic Clinic</strong> Moments</div>
+        </div>
+        <div class="slide">
+            <img src="images/gallery/slide-8.jpg" alt="ELURÉ Aesthetic Clinic photo 8">
+            <div class="slide-caption"><strong>ELURÉ Aesthetic Clinic</strong> Moments</div>
+        </div>
+        <div class="slide">
+            <img src="images/gallery/slide-9.jpg" alt="ELURÉ Aesthetic Clinic photo 9">
+            <div class="slide-caption"><strong>ELURÉ Aesthetic Clinic</strong> Moments</div>
+        </div>
+        <div class="slide">
+            <img src="images/gallery/slide-10.jpg" alt="ELURÉ Aesthetic Clinic photo 10">
+            <div class="slide-caption"><strong>ELURÉ Aesthetic Clinic</strong> Moments</div>
+        </div>
+    </div>
+
+    <button class="nav-arrow prev" id="prevBtn" aria-label="Previous slide"><i class="fas fa-chevron-left"></i></button>
+    <button class="nav-arrow next" id="nextBtn" aria-label="Next slide"><i class="fas fa-chevron-right"></i></button>
+
+    <div class="hint"><i class="fas fa-arrow-left"></i> <i class="fas fa-arrow-right"></i> navigate &nbsp;|&nbsp; <i class="fas fa-pause"></i> autoplay</div>
+
+    <div class="controls">
+        <button id="playPauseBtn" aria-label="Play or pause" title="Play / Pause"><i class="fas fa-pause"></i></button>
+        <div class="dots" id="dots"></div>
+        <div class="counter"><span id="current">1</span> / <span id="total">10</span></div>
+        <button class="fullscreen-btn" id="fullscreenBtn" aria-label="Toggle fullscreen" title="Fullscreen"><i class="fas fa-expand"></i></button>
+    </div>
+
+    <script>
+        const slides = document.querySelectorAll('.slide');
+        const total = slides.length;
+        const dotsContainer = document.getElementById('dots');
+        const currentEl = document.getElementById('current');
+        const totalEl = document.getElementById('total');
+        const progress = document.getElementById('progress');
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const playPauseIcon = playPauseBtn.querySelector('i');
+        const fullscreenBtn = document.getElementById('fullscreenBtn');
+        const fullscreenIcon = fullscreenBtn.querySelector('i');
+
+        let current = 0;
+        let timer = null;
+        const interval = 5000;
+        let playing = true;
+
+        totalEl.textContent = total;
+
+        // Build dots
+        for (let i = 0; i < total; i++) {
+            const dot = document.createElement('button');
+            dot.className = 'dot' + (i === 0 ? ' active' : '');
+            dot.setAttribute('aria-label', 'Go to slide ' + (i + 1));
+            dot.addEventListener('click', () => goTo(i, true));
+            dotsContainer.appendChild(dot);
+        }
+
+        const dots = document.querySelectorAll('.dot');
+
+        function goTo(index, restart) {
+            slides[current].classList.remove('active');
+            dots[current].classList.remove('active');
+            current = (index + total) % total;
+            slides[current].classList.add('active');
+            dots[current].classList.add('active');
+            currentEl.textContent = current + 1;
+            if (restart) { restartTimer(); }
+        }
+
+        function next() { goTo(current + 1, true); }
+        function prev() { goTo(current - 1, true); }
+
+        function restartTimer() {
+            if (timer) { clearInterval(timer); timer = null; }
+            if (playing) { timer = setInterval(next, interval); }
+            progress.style.transition = 'none';
+            progress.style.width = '0%';
+            requestAnimationFrame(() => {
+                progress.style.transition = 'width ' + interval + 'ms linear';
+                progress.style.width = '100%';
+            });
+        }
+
+        function togglePlay() {
+            playing = !playing;
+            playPauseIcon.className = playing ? 'fas fa-pause' : 'fas fa-play';
+            if (playing) { restartTimer(); }
+            else {
+                if (timer) { clearInterval(timer); timer = null; }
+                progress.style.width = '0%';
+            }
+        }
+
+        // Controls
+        document.getElementById('prevBtn').addEventListener('click', prev);
+        document.getElementById('nextBtn').addEventListener('click', next);
+        playPauseBtn.addEventListener('click', togglePlay);
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight') { next(); }
+            else if (e.key === 'ArrowLeft') { prev(); }
+            else if (e.key === ' ' || e.key === 'Spacebar') { e.preventDefault(); togglePlay(); }
+            else if (e.key === 'f' || e.key === 'F') { toggleFullscreen(); }
+        });
+
+        // Fullscreen
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+                fullscreenIcon.className = 'fas fa-compress';
+            } else {
+                document.exitFullscreen();
+                fullscreenIcon.className = 'fas fa-expand';
+            }
+        }
+
+        fullscreenBtn.addEventListener('click', toggleFullscreen);
+        document.addEventListener('fullscreenchange', () => {
+            fullscreenIcon.className = document.fullscreenElement ? 'fas fa-compress' : 'fas fa-expand';
+        });
+
+        // Touch swipe support
+        let touchStartX = 0;
+        const slideshow = document.getElementById('slideshow');
+        slideshow.addEventListener('touchstart', (e) => { touchStartX = e.touches[0].clientX; }, { passive: true });
+        slideshow.addEventListener('touchend', (e) => {
+            const diff = e.changedTouches[0].clientX - touchStartX;
+            if (Math.abs(diff) > 50) { diff < 0 ? next() : prev(); }
+        }, { passive: true });
+
+        // Pause on hover
+        slideshow.addEventListener('mouseenter', () => {
+            if (playing && timer) { clearInterval(timer); timer = null; }
+        });
+        slideshow.addEventListener('mouseleave', restartTimer);
+
+        // Preload neighbor images
+        function preload() {
+            const img = new Image();
+            img.src = slides[(current + 1) % total].querySelector('img').src;
+        }
+
+        restartTimer();
+        preload();
+    </script>
+</body>
+</html>
