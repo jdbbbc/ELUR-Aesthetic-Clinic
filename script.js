@@ -1,3 +1,7 @@
+// ====================================================
+// ELURÉ Aesthetic Clinic — script.js
+// Copyright © 2026 ELURÉ Aesthetic Clinic. All rights reserved.
+// ====================================================
 // ===== Navbar Scroll Effect =====
 const navbar = document.getElementById('navbar');
 
