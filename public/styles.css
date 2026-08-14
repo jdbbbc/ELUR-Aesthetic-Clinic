@@ -86,6 +86,13 @@ img { max-width: 100%; height: auto; }
 .btn-book { background: var(--gradient); color: var(--white); padding: 12px 28px; }
 .btn-book:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(122, 90, 8, 0.4); }
 
+.btn-admin {
+    color: var(--secondary-color); text-decoration: none;
+    font-size: 14px; font-weight: 600; padding: 12px 8px;
+    transition: var(--transition);
+}
+.btn-admin:hover { color: var(--primary-light); }
+
 .btn-submit {
     background: var(--gradient); color: var(--white); width: 100%;
     display: flex; align-items: center; justify-content: center; gap: 10px;
@@ -359,11 +366,6 @@ textarea { resize: vertical; min-height: 120px; }
 }
 
 .footer-bottom p { color: rgba(255, 255, 255, 0.5); font-size: 14px; }
-.footer-admin {
-    color: rgba(255, 255, 255, 0.35); font-size: 13px;
-    text-decoration: none; transition: var(--transition); margin-left: 12px;
-}
-.footer-admin:hover { color: var(--primary-light); }
 .footer-social { display: flex; gap: 15px; }
 
 .footer-social a {
@@ -404,6 +406,7 @@ textarea { resize: vertical; min-height: 120px; }
     }
 
     .btn-book { display: none; }
+    .btn-admin { display: none; }
 
     .hero { flex-direction: column; padding: 100px 0 60px; }
     .hero-content { padding-left: 0; text-align: center; max-width: 100%; }
