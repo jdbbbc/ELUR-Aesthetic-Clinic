@@ -37,6 +37,7 @@
   .panel h2 { font-size: 15px; color: var(--text); margin-bottom: 12px; }
   .panel-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
   .panel-head h2 { margin-bottom: 0; }
+  .done-search { border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; font-size: 13px; max-width: 220px; }
 
   .filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
   .filter-btn { border: 1px solid var(--line); background: #fff; border-radius: 20px; padding: 8px 16px; font-size: 13px; cursor: pointer; color: var(--muted); }
@@ -274,24 +275,6 @@
   }
 
   function renderDoneHistory() {
-    const done = state.bookings
-      .filter((b) => b.status === 'done')
-      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-    const items = done.length
-      ? done.map((b) => `
-        <div class="done-item">
-          <div class="done-main">
-            <span class="done-name">${escapeHtml(b.name)}</span>
-            <span class="done-service">${escapeHtml(b.service || '—')}</span>
-          </div>
-          <div class="done-sub">
-            <span class="done-contact">${escapeHtml(b.phone || '—')}</span>
-            <span class="done-email">${escapeHtml(b.email || '—')}</span>
-            <span class="done-method">${escapeHtml(b.method || '—')}</span>
-          </div>
-          <span class="done-date">${escapeHtml(formatDate(b.created_at))}</span>
-        </div>`).join('')
-      : '<span class="empty">No done bookings yet.</span>';
     const panel = $('.panel');
     if (!panel.dataset.doneInjected) {
       const div = document.createElement('div');
@@ -300,26 +283,39 @@
       div.innerHTML = `
         <div class="panel-head">
           <h2>Done History</h2>
-          <button class="btn btn-ghost btn-sm" id="resetDoneBtn">Reset Day</button>
+          <input type="search" id="doneSearch" placeholder="Search by name..." class="done-search">
         </div>
-        <div class="done-list">${items}</div>`;
+        <div class="done-list"></div>`;
       panel.insertAdjacentElement('afterend', div);
       panel.dataset.doneInjected = '1';
-      $('#resetDoneBtn').addEventListener('click', async () => {
-        if (!confirm('Delete all done bookings for today?')) return;
-        const done = state.bookings.filter((b) => b.status === 'done');
-        try {
-          for (const b of done) await api(`/api/bookings/${b.id}`, { method: 'DELETE' });
-          showToast('Done history reset.');
-          loadDashboard();
-        } catch (err) {
-          if (err.message !== 'Session expired') alert(err.message);
-        }
+      $('#doneSearch').addEventListener('input', () => {
+        $('#donePanel').querySelector('.done-list').innerHTML = renderDoneList();
       });
     } else {
       const donePanel = $('#donePanel');
-      if (donePanel) donePanel.querySelector('.done-list').innerHTML = items;
+      if (donePanel) donePanel.querySelector('.done-list').innerHTML = renderDoneList();
     }
+  }
+
+  function renderDoneList() {
+    const term = ($('#doneSearch') ? $('#doneSearch').value.trim().toLowerCase() : '');
+    const done = state.bookings
+      .filter((b) => b.status === 'done' && (!term || String(b.name || '').toLowerCase().includes(term)))
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    if (!done.length) return '<span class="empty">No matching done bookings.</span>';
+    return done.map((b) => `
+      <div class="done-item">
+        <div class="done-main">
+          <span class="done-name">${escapeHtml(b.name)}</span>
+          <span class="done-service">${escapeHtml(b.service || '—')}</span>
+        </div>
+        <div class="done-sub">
+          <span class="done-contact">${escapeHtml(b.phone || '—')}</span>
+          <span class="done-email">${escapeHtml(b.email || '—')}</span>
+          <span class="done-method">${escapeHtml(b.method || '—')}</span>
+        </div>
+        <span class="done-date">${escapeHtml(formatDate(b.created_at))}</span>
+      </div>`).join('');
   }
 
   function rowHtml(b) {
