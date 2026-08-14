@@ -3,6 +3,13 @@ gallery-video.mp4
 gallery.html
 images/gallery/
 
+# Node.js
+node_modules/
+data/
+.env
+server.log
+server.err.log
+
 # OS files
 Thumbs.db
 Desktop.ini

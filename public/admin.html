@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin &middot; ELUR&Eacute; Aesthetic Clinic</title>
+<link rel="icon" href="/images/logo.jpg" type="image/jpeg">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root { --gold: #7a5a08; --gold-light: #a8852d; --bg: #faf8f3; --card: #ffffff; --line: #e8e0cf; --text: #2b2620; --muted: #8a8070; --red: #b3261e; --green: #1e7a3c; --blue: #235fa8; }
+  body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  .hidden { display: none !important; }
+
+  /* Login */
+  #loginScreen { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+  .login-card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 40px 32px; width: 100%; max-width: 400px; box-shadow: 0 8px 30px rgba(122, 90, 8, 0.08); text-align: center; }
+  .login-card img { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; margin-bottom: 16px; }
+  .login-card h1 { font-size: 22px; color: var(--gold); margin-bottom: 4px; }
+  .login-card p { color: var(--muted); font-size: 14px; margin-bottom: 24px; }
+  .login-card input { width: 100%; padding: 12px 14px; margin-bottom: 12px; border: 1px solid var(--line); border-radius: 8px; font-size: 15px; background: #fff; }
+  .login-card input:focus { outline: 2px solid var(--gold-light); border-color: transparent; }
+  .btn { border: none; border-radius: 8px; padding: 12px 20px; font-size: 15px; font-weight: 600; cursor: pointer; }
+  .btn-primary { background: var(--gold); color: #fff; width: 100%; }
+  .btn-primary:hover { background: var(--gold-light); }
+  .login-error { color: var(--red); font-size: 13px; margin-top: 8px; min-height: 18px; }
+
+  /* Dashboard */
+  #dashScreen { padding: 24px; max-width: 1100px; margin: 0 auto; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+  header h1 { font-size: 22px; color: var(--gold); }
+  header .actions { display: flex; gap: 8px; }
+  .btn-ghost { background: var(--card); border: 1px solid var(--line); color: var(--text); }
+  .btn-ghost:hover { border-color: var(--gold-light); color: var(--gold); }
+  .btn-sm { padding: 8px 14px; font-size: 13px; }
+
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .stat-card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 18px 16px; }
+  .stat-card .num { font-size: 30px; font-weight: 700; color: var(--gold); }
+  .stat-card .label { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .stat-card .sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+  .panel { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 18px; margin-bottom: 20px; }
+  .panel h2 { font-size: 15px; color: var(--text); margin-bottom: 12px; }
+
+  .filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .filter-btn { border: 1px solid var(--line); background: #fff; border-radius: 20px; padding: 8px 16px; font-size: 13px; cursor: pointer; color: var(--muted); }
+  .filter-btn.active { background: var(--gold); border-color: var(--gold); color: #fff; }
+
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap; }
+  tr:hover td { background: #fbf8f0; }
+  .msg-cell { max-width: 260px; color: var(--muted); font-size: 13px; white-space: pre-wrap; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+  .badge.new { background: #fdecea; color: var(--red); }
+  .badge.contacted { background: #e8f0fb; color: var(--blue); }
+  .badge.done { background: #e6f5ec; color: var(--green); }
+  .row-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+  .row-actions button { border: 1px solid var(--line); background: #fff; border-radius: 6px; padding: 5px 10px; font-size: 12px; cursor: pointer; }
+  .row-actions button.contacted { color: var(--blue); }
+  .row-actions button.done { color: var(--green); }
+  .row-actions button.delete { color: var(--red); }
+  .row-actions button:hover { border-color: currentColor; }
+  .empty { text-align: center; color: var(--muted); padding: 30px 0; }
+  .date-cell { white-space: nowrap; color: var(--muted); font-size: 13px; }
+
+  .top-services { display: flex; flex-wrap: wrap; gap: 8px; }
+  .service-pill { background: #f4efe2; color: var(--gold); border-radius: 16px; padding: 6px 14px; font-size: 13px; font-weight: 600; }
+
+  .toast { position: fixed; bottom: 20px; right: 20px; background: var(--text); color: #fff; padding: 12px 18px; border-radius: 8px; font-size: 14px; opacity: 0; transition: opacity 0.25s; z-index: 50; }
+  .toast.show { opacity: 1; }
+  @media (max-width: 640px) { #dashScreen { padding: 14px; } }
+</style>
+</head>
+<body>
+
+  <div id="loginScreen">
+    <div class="login-card">
+      <img src="/images/logo.jpg" alt="ELUR&Eacute; Aesthetic Clinic">
+      <h1>Admin Dashboard</h1>
+      <p>Sign in to manage bookings</p>
+      <form id="loginForm">
+        <input type="text" id="loginEmail" placeholder="Email or username" required autocomplete="username">
+        <input type="password" id="loginPassword" placeholder="Password" required autocomplete="current-password">
+        <button type="submit" class="btn btn-primary" id="loginBtn">Sign In</button>
+        <div class="login-error" id="loginError"></div>
+      </form>
+    </div>
+  </div>
+
+  <div id="dashScreen" class="hidden">
+    <header>
+      <h1>Booking Dashboard</h1>
+      <div class="actions">
+        <a href="/#contact" target="_blank" class="btn btn-ghost btn-sm" style="text-decoration:none;display:inline-flex;align-items:center;">Booking Page</a>
+        <button class="btn btn-ghost btn-sm" id="exportBtn">Export CSV</button>
+        <button class="btn btn-ghost btn-sm" id="refreshBtn">Refresh</button>
+        <button class="btn btn-ghost btn-sm" id="logoutBtn">Logout</button>
+      </div>
+    </header>
+
+    <div class="stats" id="statsRow"></div>
+
+    <div class="panel">
+      <div class="filters" id="filters">
+        <button class="filter-btn active" data-status="all">All</button>
+        <button class="filter-btn" data-status="new">New</button>
+        <button class="filter-btn" data-status="contacted">Contacted</button>
+        <button class="filter-btn" data-status="done">Done</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Phone</th>
+              <th>Treatment</th>
+              <th>Message</th>
+              <th>Method</th>
+              <th>Status</th>
+              <th>Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="bookingsBody"></tbody>
+        </table>
+      </div>
+      <div class="empty" id="emptyMsg"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+  const $ = (sel) => document.querySelector(sel);
+  const state = { status: 'all', bookings: [] };
+
+  function escapeHtml(str) {
+    return String(str ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  function showToast(msg) {
+    const t = $('#toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  async function api(path, options) {
+    const res = await fetch(path, options);
+    if (res.status === 401) {
+      showLogin();
+      throw new Error('Session expired');
+    }
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || 'Request failed');
+    }
+    return res.json();
+  }
+
+  function showLogin() {
+    $('#loginScreen').classList.remove('hidden');
+    $('#dashScreen').classList.add('hidden');
+  }
+
+  function showDashboard() {
+    $('#loginScreen').classList.add('hidden');
+    $('#dashScreen').classList.remove('hidden');
+    loadDashboard();
+  }
+
+  $('#loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    $('#loginError').textContent = '';
+    $('#loginBtn').disabled = true;
+    $('#loginBtn').textContent = 'Signing in...';
+    try {
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: $('#loginEmail').value, password: $('#loginPassword').value })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        if (res.status === 429) $('#loginError').textContent = data.error || 'Too many attempts. Try later.';
+        else $('#loginError').textContent = data.error || 'Invalid email or password.';
+        return;
+      }
+      $('#loginPassword').value = '';
+      showDashboard();
+    } catch (err) {
+      $('#loginError').textContent = 'Connection error. Try again.';
+    } finally {
+      $('#loginBtn').disabled = false;
+      $('#loginBtn').textContent = 'Sign In';
+    }
+  });
+
+  $('#logoutBtn').addEventListener('click', async () => {
+    try { await api('/api/logout', { method: 'POST' }); } catch (e) {}
+    showLogin();
+  });
+
+  $('#refreshBtn').addEventListener('click', loadDashboard);
+
+  $('#exportBtn').addEventListener('click', () => {
+    const rows = state.bookings.filter((b) => state.status === 'all' || b.status === state.status);
+    if (!rows.length) {
+      showToast('Nothing to export.');
+      return;
+    }
+    const headers = ['Name', 'Email', 'Phone', 'Treatment', 'Message', 'Method', 'Status', 'Date'];
+    const csv = [
+      headers.join(','),
+      ...rows.map((b) => [
+        csvCell(b.name), csvCell(b.email), csvCell(b.phone),
+        csvCell(b.service || ''), csvCell(b.message || ''),
+        csvCell(b.method || ''), csvCell(b.status),
+        csvCell(formatDate(b.created_at))
+      ].join(','))
+    ].join('\r\n');
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `bookings_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('CSV exported.');
+  });
+
+  function csvCell(value) {
+    const v = String(value ?? '');
+    return /[",\r\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+  }
+
+  document.querySelectorAll('.filter-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.filter-btn').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      state.status = btn.dataset.status;
+      renderBookings();
+    });
+  });
+
+  async function loadDashboard() {
+    const [stats, bookings] = await Promise.all([
+      api('/api/stats'),
+      api('/api/bookings')
+    ]);
+    state.bookings = bookings;
+    renderStats(stats);
+    renderBookings();
+  }
+
+  function renderStats(s) {
+    const cards = [
+      { num: s.total, label: 'Total Bookings', sub: 'All time' },
+      { num: s.today, label: 'Today', sub: 'New bookings today' },
+      { num: s.thisMonth, label: 'This Month', sub: 'Bookings this month' },
+      { num: s.new, label: 'New', sub: 'Awaiting contact' }
+    ];
+    $('#statsRow').innerHTML = cards.map((c) =>
+      `<div class="stat-card"><div class="num">${c.num}</div><div class="label">${c.label}</div><div class="sub">${c.sub}</div></div>`
+    ).join('');
+    const top = s.topServices && s.topServices.length
+      ? s.topServices.map((t) => `<span class="service-pill">${escapeHtml(t.service)} &middot; ${t.count}</span>`).join('')
+      : '<span class="empty">No services yet</span>';
+    const panel = $('.panel');
+    if (!panel.dataset.servicesInjected) {
+      const div = document.createElement('div');
+      div.className = 'panel';
+      div.innerHTML = `<h2>Top Treatments</h2><div class="top-services">${top}</div>`;
+      panel.insertAdjacentElement('afterend', div);
+      panel.dataset.servicesInjected = '1';
+    } else {
+      const topPanel = panel.nextElementSibling;
+      if (topPanel && topPanel.classList.contains('panel')) topPanel.querySelector('.top-services').innerHTML = top;
+    }
+  }
+
+  function renderBookings() {
+    const rows = state.bookings.filter((b) => state.status === 'all' || b.status === state.status);
+    const tbody = $('#bookingsBody');
+    $('#emptyMsg').textContent = rows.length ? '' : (state.bookings.length ? 'No bookings in this status.' : 'No bookings yet.');
+    tbody.innerHTML = rows.map((b) => `
+      <tr data-id="${b.id}">
+        <td><strong>${escapeHtml(b.name)}</strong></td>
+        <td>${escapeHtml(b.email)}</td>
+        <td>${escapeHtml(b.phone)}</td>
+        <td>${escapeHtml(b.service || '—')}</td>
+        <td class="msg-cell">${escapeHtml(b.message || '—')}</td>
+        <td>${escapeHtml(b.method || '—')}</td>
+        <td><span class="badge ${escapeHtml(b.status)}">${escapeHtml(b.status)}</span></td>
+        <td class="date-cell">${escapeHtml(formatDate(b.created_at))}</td>
+        <td>
+          <div class="row-actions">
+            ${b.status !== 'contacted' ? `<button class="contacted" data-act="contacted" title="Mark contacted">Contacted</button>` : ''}
+            ${b.status !== 'done' ? `<button class="done" data-act="done" title="Mark done">Done</button>` : ''}
+            <button class="delete" data-act="delete" title="Delete booking">Delete</button>
+          </div>
+        </td>
+      </tr>
+    `).join('') || '<tr><td colspan="9" class="empty">No bookings to show.</td></tr>';
+  }
+
+  function formatDate(iso) {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    return d.toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+  }
+
+  $('#bookingsBody').addEventListener('click', async (e) => {
+    const btn = e.target.closest('button[data-act]');
+    if (!btn) return;
+    const tr = btn.closest('tr');
+    const id = tr.dataset.id;
+    const act = btn.dataset.act;
+    try {
+      if (act === 'delete') {
+        if (!confirm('Delete this booking?')) return;
+        await api(`/api/bookings/${id}`, { method: 'DELETE' });
+        showToast('Booking deleted.');
+      } else {
+        await api(`/api/bookings/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: act })
+        });
+        showToast('Booking updated.');
+      }
+      loadDashboard();
+    } catch (err) {
+      if (err.message !== 'Session expired') alert(err.message);
+    }
+  });
+
+  showLogin();
+</script>
+</body>
+</html>

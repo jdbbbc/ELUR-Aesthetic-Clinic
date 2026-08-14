@@ -107,6 +107,20 @@ if (bookingForm) {
             return;
         }
 
+        // Save booking to the site's JSON store (non-blocking)
+        fetch('/api/bookings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name,
+                email,
+                phone,
+                service: service || '',
+                message: message || '',
+                method: bookingMethod
+            })
+        }).catch(err => console.error('Failed to save booking:', err));
+
         const displayName = escapeHtml(name);
         const displayEmail = escapeHtml(email);
         const displayPhone = escapeHtml(phone);
@@ -289,3 +303,28 @@ document.querySelectorAll('.service-card, .info-item').forEach(el => {
     el.style.transition = 'all 0.6s ease';
     observer.observe(el);
 });
+
+// ===== Hidden Admin Access (Ctrl+Shift+A) =====
+document.addEventListener('keydown', (e) => {
+    if (e.ctrlKey && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
+        e.preventDefault();
+        window.location.href = 'admin.html';
+    }
+});
+
+// ===== Hidden Admin Access (tap logo 5 times) =====
+let logoTaps = 0;
+let logoTapTimer = null;
+const logoEl = document.querySelector('.navbar .logo');
+if (logoEl) {
+    logoEl.addEventListener('click', (e) => {
+        e.preventDefault();
+        logoTaps += 1;
+        clearTimeout(logoTapTimer);
+        logoTapTimer = setTimeout(() => { logoTaps = 0; }, 3000);
+        if (logoTaps >= 5) {
+            logoTaps = 0;
+            window.location.href = 'admin.html';
+        }
+    });
+}
