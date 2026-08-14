@@ -206,6 +206,10 @@
 
   $('#refreshBtn').addEventListener('click', loadDashboard);
 
+  setInterval(() => {
+    if (!$('#dashScreen').classList.contains('hidden')) loadDashboard();
+  }, 30000);
+
   $('#exportBtn').addEventListener('click', () => {
     const rows = state.bookings.filter((b) => state.status === 'all' || b.status === state.status);
     if (!rows.length) {
