@@ -206,9 +206,23 @@
 
   $('#refreshBtn').addEventListener('click', loadDashboard);
 
-  setInterval(() => {
-    if (!$('#dashScreen').classList.contains('hidden')) loadDashboard();
-  }, 30000);
+  setInterval(async () => {
+    if ($('#dashScreen').classList.contains('hidden')) return;
+    try {
+      const [stats, bookings] = await Promise.all([
+        api('/api/stats'),
+        api('/api/bookings')
+      ]);
+      if (state.bookings.length && bookings.length > state.bookings.length) {
+        showToast(`New booking received: ${escapeHtml(bookings[0].name)}`);
+      }
+      state.bookings = bookings;
+      renderStats(stats);
+      renderBookings();
+    } catch (err) {
+      if (err.message !== 'Session expired') showToast('Auto-refresh failed.');
+    }
+  }, 5000);
 
   $('#exportBtn').addEventListener('click', () => {
     const rows = state.bookings.filter((b) => state.status === 'all' || b.status === state.status);
