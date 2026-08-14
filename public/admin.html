@@ -61,12 +61,15 @@
 
   .done-list { display: flex; flex-direction: column; gap: 10px; }
   .done-item {
-    display: flex; justify-content: space-between; align-items: center; gap: 12px;
+    display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 6px 14px;
     background: #f4efe2; border-radius: 10px; padding: 10px 14px; font-size: 13px;
   }
+  .done-main { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .done-sub { grid-column: 1 / -1; display: flex; gap: 14px; flex-wrap: wrap; color: var(--muted); font-size: 12px; }
   .done-name { font-weight: 600; color: var(--text); }
   .done-service { color: var(--gold); }
-  .done-date { color: var(--muted); white-space: nowrap; font-size: 12px; }
+  .done-contact, .done-email, .done-method { white-space: nowrap; }
+  .done-date { color: var(--muted); white-space: nowrap; font-size: 12px; text-align: right; }
 
   .toast { position: fixed; bottom: 20px; right: 20px; background: var(--text); color: #fff; padding: 12px 18px; border-radius: 8px; font-size: 14px; opacity: 0; transition: opacity 0.25s; z-index: 50; }
   .toast.show { opacity: 1; }
@@ -275,8 +278,15 @@
     const items = done.length
       ? done.map((b) => `
         <div class="done-item">
-          <span class="done-name">${escapeHtml(b.name)}</span>
-          <span class="done-service">${escapeHtml(b.service || '—')}</span>
+          <div class="done-main">
+            <span class="done-name">${escapeHtml(b.name)}</span>
+            <span class="done-service">${escapeHtml(b.service || '—')}</span>
+          </div>
+          <div class="done-sub">
+            <span class="done-contact">${escapeHtml(b.phone || '—')}</span>
+            <span class="done-email">${escapeHtml(b.email || '—')}</span>
+            <span class="done-method">${escapeHtml(b.method || '—')}</span>
+          </div>
           <span class="done-date">${escapeHtml(formatDate(b.created_at))}</span>
         </div>`).join('')
       : '<span class="empty">No done bookings yet.</span>';
@@ -317,7 +327,11 @@
   }
 
   function renderBookings() {
-    const rows = state.bookings.filter((b) => state.status === 'all' || b.status === state.status);
+    const rows = state.bookings.filter((b) => {
+      const statusOk = state.status === 'all' || b.status === state.status;
+      const notDone = state.status !== 'done' ? b.status !== 'done' : true;
+      return statusOk && notDone;
+    });
     const tbody = $('#bookingsBody');
     $('#emptyMsg').textContent = rows.length ? '' : (state.bookings.length ? 'No bookings in this status.' : 'No bookings yet.');
     tbody.innerHTML = rows.map(rowHtml).join('') || '<tr><td colspan="9" class="empty">No bookings to show.</td></tr>';
@@ -348,8 +362,10 @@
           body: JSON.stringify({ status: act })
         });
         const b = state.bookings.find((x) => x.id === id);
-        if (b) {
-          b.status = act;
+        if (b) b.status = act;
+        if (act === 'done') {
+          loadDashboard();
+        } else {
           tr.outerHTML = rowHtml(b);
         }
         showToast('Booking updated.');
