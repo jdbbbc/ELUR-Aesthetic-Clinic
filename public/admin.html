@@ -285,11 +285,8 @@
     }
   }
 
-  function renderBookings() {
-    const rows = state.bookings.filter((b) => state.status === 'all' || b.status === state.status);
-    const tbody = $('#bookingsBody');
-    $('#emptyMsg').textContent = rows.length ? '' : (state.bookings.length ? 'No bookings in this status.' : 'No bookings yet.');
-    tbody.innerHTML = rows.map((b) => `
+  function rowHtml(b) {
+    return `
       <tr data-id="${b.id}">
         <td><strong>${escapeHtml(b.name)}</strong></td>
         <td>${escapeHtml(b.email)}</td>
@@ -307,7 +304,14 @@
           </div>
         </td>
       </tr>
-    `).join('') || '<tr><td colspan="9" class="empty">No bookings to show.</td></tr>';
+    `;
+  }
+
+  function renderBookings() {
+    const rows = state.bookings.filter((b) => state.status === 'all' || b.status === state.status);
+    const tbody = $('#bookingsBody');
+    $('#emptyMsg').textContent = rows.length ? '' : (state.bookings.length ? 'No bookings in this status.' : 'No bookings yet.');
+    tbody.innerHTML = rows.map(rowHtml).join('') || '<tr><td colspan="9" class="empty">No bookings to show.</td></tr>';
   }
 
   function formatDate(iso) {
@@ -327,15 +331,20 @@
         if (!confirm('Delete this booking?')) return;
         await api(`/api/bookings/${id}`, { method: 'DELETE' });
         showToast('Booking deleted.');
+        loadDashboard();
       } else {
         await api(`/api/bookings/${id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ status: act })
         });
+        const b = state.bookings.find((x) => x.id === id);
+        if (b) {
+          b.status = act;
+          tr.outerHTML = rowHtml(b);
+        }
         showToast('Booking updated.');
       }
-      loadDashboard();
     } catch (err) {
       if (err.message !== 'Session expired') alert(err.message);
     }
