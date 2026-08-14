@@ -38,6 +38,11 @@
   .panel-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
   .panel-head h2 { margin-bottom: 0; }
   .done-search { border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; font-size: 13px; max-width: 220px; }
+  .add-hint { color: var(--muted); font-size: 12px; }
+  .add-form { display: flex; flex-direction: column; gap: 10px; }
+  .add-row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .add-row input, .add-row select { flex: 1; min-width: 160px; border: 1px solid var(--line); border-radius: 8px; padding: 9px 12px; font-size: 14px; background: #fff; }
+  .add-actions { justify-content: flex-end; }
 
   .filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
   .filter-btn { border: 1px solid var(--line); background: #fff; border-radius: 20px; padding: 8px 16px; font-size: 13px; cursor: pointer; color: var(--muted); }
@@ -107,6 +112,45 @@
     </header>
 
     <div class="panel">
+      <div class="panel-head">
+        <h2>Add Booking</h2>
+        <span class="add-hint">For bookings received via Messenger, SMS, etc.</span>
+      </div>
+      <form id="addBookingForm" class="add-form">
+        <div class="add-row">
+          <input type="text" id="addName" placeholder="Name" required>
+          <input type="email" id="addEmail" placeholder="Email" required>
+          <input type="tel" id="addPhone" placeholder="Phone" required>
+        </div>
+        <div class="add-row">
+          <select id="addService">
+            <option value="" disabled selected>Select Treatment</option>
+            <option>ELURÉ Lumi Peel™</option>
+            <option>PDRN Renewal™</option>
+            <option>UltraLift™ HIFU</option>
+            <option>VitalDrip™</option>
+            <option>ELURÉ SKINSCOPE™</option>
+            <option>FollicleRenew™</option>
+            <option>SmoothCode™ Botox</option>
+            <option>SilkSkin Laser™</option>
+            <option>Sculpté™ Body Contouring</option>
+          </select>
+          <select id="addMethod">
+            <option value="messenger" selected>Messenger</option>
+            <option value="whatsapp">WhatsApp</option>
+            <option value="sms">SMS</option>
+            <option value="email">Gmail</option>
+            <option value="facebook">Facebook</option>
+          </select>
+          <input type="text" id="addMessage" placeholder="Message (optional)">
+        </div>
+        <div class="add-row add-actions">
+          <button type="submit" class="btn btn-primary btn-sm">Add Booking</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="panel" id="bookingsPanel">
       <div class="filters" id="filters">
         <button class="filter-btn active" data-status="all">All</button>
         <button class="filter-btn" data-status="new">New</button>
@@ -267,6 +311,36 @@
     });
   });
 
+  $('#addBookingForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const payload = {
+      name: $('#addName').value.trim(),
+      email: $('#addEmail').value.trim(),
+      phone: $('#addPhone').value.trim(),
+      service: $('#addService').value,
+      method: $('#addMethod').value,
+      message: $('#addMessage').value.trim()
+    };
+    if (!payload.service) {
+      showToast('Select a treatment.');
+      return;
+    }
+    try {
+      const res = await fetch('/api/bookings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Failed to add booking.');
+      e.target.reset();
+      showToast('Booking added.');
+      loadDashboard();
+    } catch (err) {
+      alert(err.message);
+    }
+  });
+
   async function loadDashboard() {
     const bookings = await api('/api/bookings');
     state.bookings = bookings;
@@ -275,7 +349,7 @@
   }
 
   function renderDoneHistory() {
-    const panel = $('.panel');
+    const panel = $('#bookingsPanel');
     if (!panel.dataset.doneInjected) {
       const div = document.createElement('div');
       div.className = 'panel';
