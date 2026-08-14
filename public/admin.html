@@ -78,6 +78,8 @@
   .done-service { color: var(--gold); }
   .done-contact, .done-email, .done-method { white-space: nowrap; }
   .done-date { color: var(--muted); white-space: nowrap; font-size: 12px; text-align: right; }
+  .done-delete { border: 1px solid var(--red); background: #fff; color: var(--red); border-radius: 6px; padding: 4px 10px; font-size: 12px; font-weight: 600; cursor: pointer; }
+  .done-delete:hover { background: var(--red); color: #fff; }
 
   .toast { position: fixed; bottom: 20px; right: 20px; background: var(--text); color: #fff; padding: 12px 18px; border-radius: 8px; font-size: 14px; opacity: 0; transition: opacity 0.25s; z-index: 50; }
   .toast.show { opacity: 1; }
@@ -377,7 +379,7 @@
       .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
     if (!done.length) return '<span class="empty">No matching done bookings.</span>';
     return done.map((b) => `
-      <div class="done-item">
+      <div class="done-item" data-id="${b.id}">
         <div class="done-main">
           <span class="done-name">${escapeHtml(b.name)}</span>
           <span class="done-service">${escapeHtml(b.service || '—')}</span>
@@ -388,6 +390,7 @@
           <span class="done-method">${escapeHtml(b.method || '—')}</span>
         </div>
         <span class="done-date">${escapeHtml(formatDate(b.created_at))}</span>
+        <button class="done-delete" data-id="${b.id}" title="Delete record">Delete</button>
       </div>`).join('');
   }
 
@@ -456,6 +459,20 @@
         }
         showToast('Booking updated.');
       }
+    } catch (err) {
+      if (err.message !== 'Session expired') alert(err.message);
+    }
+  });
+
+  document.addEventListener('click', async (e) => {
+    const delBtn = e.target.closest('.done-delete');
+    if (!delBtn) return;
+    if (!confirm('Delete this record from history?')) return;
+    const id = Number(delBtn.dataset.id);
+    try {
+      await api(`/api/bookings/${id}`, { method: 'DELETE' });
+      showToast('Record deleted.');
+      loadDashboard();
     } catch (err) {
       if (err.message !== 'Session expired') alert(err.message);
     }
