@@ -58,8 +58,8 @@
   .badge.new { background: #fdecea; color: var(--red); }
   .badge.contacted { background: #e8f0fb; color: var(--blue); }
   .badge.done { background: #e6f5ec; color: var(--green); }
-  .row-actions { display: flex; gap: 6px; flex-wrap: wrap; }
-  .row-actions button { border: 1px solid var(--line); background: #fff; border-radius: 6px; padding: 5px 10px; font-size: 12px; cursor: pointer; }
+  .row-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .row-actions button { border: 1px solid var(--line); background: #fff; border-radius: 8px; padding: 9px 16px; font-size: 14px; font-weight: 600; cursor: pointer; }
   .row-actions button.contacted { color: var(--blue); }
   .row-actions button.done { color: var(--green); }
   .row-actions button.delete { color: var(--red); }
@@ -165,7 +165,6 @@
               <th>Email</th>
               <th>Phone</th>
               <th>Treatment</th>
-              <th>Message</th>
               <th>Method</th>
               <th>Status</th>
               <th>Date</th>
@@ -399,7 +398,6 @@
         <td>${escapeHtml(b.email)}</td>
         <td>${escapeHtml(b.phone)}</td>
         <td>${escapeHtml(b.service || '—')}</td>
-        <td class="msg-cell">${escapeHtml(b.message || '—')}</td>
         <td>${escapeHtml(b.method || '—')}</td>
         <td><span class="badge ${escapeHtml(b.status)}">${escapeHtml(b.status)}</span></td>
         <td class="date-cell">${escapeHtml(formatDate(b.created_at))}</td>
@@ -422,7 +420,7 @@
     });
     const tbody = $('#bookingsBody');
     $('#emptyMsg').textContent = rows.length ? '' : (state.bookings.length ? 'No bookings in this status.' : 'No bookings yet.');
-    tbody.innerHTML = rows.map(rowHtml).join('') || '<tr><td colspan="9" class="empty">No bookings to show.</td></tr>';
+    tbody.innerHTML = rows.map(rowHtml).join('') || '<tr><td colspan="8" class="empty">No bookings to show.</td></tr>';
   }
 
   function formatDate(iso) {
