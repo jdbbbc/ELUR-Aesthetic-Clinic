@@ -59,8 +59,14 @@
   .empty { text-align: center; color: var(--muted); padding: 30px 0; }
   .date-cell { white-space: nowrap; color: var(--muted); font-size: 13px; }
 
-  .top-services { display: flex; flex-wrap: wrap; gap: 8px; }
-  .service-pill { background: #f4efe2; color: var(--gold); border-radius: 16px; padding: 6px 14px; font-size: 13px; font-weight: 600; }
+  .done-list { display: flex; flex-direction: column; gap: 10px; }
+  .done-item {
+    display: flex; justify-content: space-between; align-items: center; gap: 12px;
+    background: #f4efe2; border-radius: 10px; padding: 10px 14px; font-size: 13px;
+  }
+  .done-name { font-weight: 600; color: var(--text); }
+  .done-service { color: var(--gold); }
+  .done-date { color: var(--muted); white-space: nowrap; font-size: 12px; }
 
   .toast { position: fixed; bottom: 20px; right: 20px; background: var(--text); color: #fff; padding: 12px 18px; border-radius: 8px; font-size: 14px; opacity: 0; transition: opacity 0.25s; z-index: 50; }
   .toast.show { opacity: 1; }
@@ -201,15 +207,12 @@
   setInterval(async () => {
     if ($('#dashScreen').classList.contains('hidden')) return;
     try {
-      const [stats, bookings] = await Promise.all([
-        api('/api/stats'),
-        api('/api/bookings')
-      ]);
+      const bookings = await api('/api/bookings');
       if (state.bookings.length && bookings.length > state.bookings.length) {
         showToast(`New booking received: ${escapeHtml(bookings[0].name)}`);
       }
       state.bookings = bookings;
-      renderStats(stats);
+      renderDoneHistory();
       renderBookings();
     } catch (err) {
       if (err.message !== 'Session expired') showToast('Auto-refresh failed.');
@@ -259,29 +262,35 @@
   });
 
   async function loadDashboard() {
-    const [stats, bookings] = await Promise.all([
-      api('/api/stats'),
-      api('/api/bookings')
-    ]);
+    const bookings = await api('/api/bookings');
     state.bookings = bookings;
-    renderStats(stats);
+    renderDoneHistory();
     renderBookings();
   }
 
-  function renderStats(s) {
-    const top = s.topServices && s.topServices.length
-      ? s.topServices.map((t) => `<span class="service-pill">${escapeHtml(t.service)} &middot; ${t.count}</span>`).join('')
-      : '<span class="empty">No services yet</span>';
+  function renderDoneHistory() {
+    const done = state.bookings
+      .filter((b) => b.status === 'done')
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    const items = done.length
+      ? done.map((b) => `
+        <div class="done-item">
+          <span class="done-name">${escapeHtml(b.name)}</span>
+          <span class="done-service">${escapeHtml(b.service || '—')}</span>
+          <span class="done-date">${escapeHtml(formatDate(b.created_at))}</span>
+        </div>`).join('')
+      : '<span class="empty">No done bookings yet.</span>';
     const panel = $('.panel');
-    if (!panel.dataset.servicesInjected) {
+    if (!panel.dataset.doneInjected) {
       const div = document.createElement('div');
       div.className = 'panel';
-      div.innerHTML = `<h2>Top Treatments</h2><div class="top-services">${top}</div>`;
+      div.id = 'donePanel';
+      div.innerHTML = `<h2>Done History</h2><div class="done-list">${items}</div>`;
       panel.insertAdjacentElement('afterend', div);
-      panel.dataset.servicesInjected = '1';
+      panel.dataset.doneInjected = '1';
     } else {
-      const topPanel = panel.nextElementSibling;
-      if (topPanel && topPanel.classList.contains('panel')) topPanel.querySelector('.top-services').innerHTML = top;
+      const donePanel = $('#donePanel');
+      if (donePanel) donePanel.querySelector('.done-list').innerHTML = items;
     }
   }
 
