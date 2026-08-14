@@ -2,6 +2,7 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { Pool } = require('pg');
 
 try {
   const envFile = fs.readFileSync(path.join(__dirname, '.env'), 'utf8');
@@ -31,17 +32,108 @@ function ensureDataFile() {
 }
 ensureDataFile();
 
-function readBookings() {
-  try {
-    const data = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
-    return Array.isArray(data) ? data : [];
-  } catch (e) {
-    return [];
-  }
+const useDb = Boolean(process.env.DATABASE_URL);
+let pool = null;
+if (useDb) {
+  pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
 }
 
-function writeBookings(bookings) {
-  fs.writeFileSync(DATA_FILE, JSON.stringify(bookings, null, 2));
+async function initDb() {
+  if (!pool) return;
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS bookings (
+      id BIGSERIAL PRIMARY KEY,
+      name TEXT NOT NULL,
+      email TEXT NOT NULL DEFAULT '',
+      phone TEXT NOT NULL DEFAULT '',
+      service TEXT NOT NULL DEFAULT '',
+      message TEXT NOT NULL DEFAULT '',
+      method TEXT NOT NULL DEFAULT '',
+      status TEXT NOT NULL DEFAULT 'new',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+  `);
+}
+
+async function getBookings(status) {
+  if (pool) {
+    const params = [];
+    let sql = 'SELECT * FROM bookings';
+    if (status && status !== 'all') {
+      params.push(status);
+      sql += ' WHERE status = $1';
+    }
+    sql += ' ORDER BY created_at DESC';
+    const { rows } = await pool.query(sql, params);
+    return rows;
+  }
+  let bookings = readBookings();
+  if (status && status !== 'all') bookings = bookings.filter((b) => b.status === status);
+  bookings.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  return bookings;
+}
+
+async function insertBooking(b) {
+  if (pool) {
+    const { rows } = await pool.query(
+      `INSERT INTO bookings (name, email, phone, service, message, method)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [b.name, b.email, b.phone, b.service, b.message, b.method]
+    );
+    return rows[0];
+  }
+  const bookings = readBookings();
+  const booking = { ...b, id: Date.now(), status: 'new', created_at: new Date().toISOString() };
+  bookings.push(booking);
+  writeBookings(bookings);
+  return booking;
+}
+
+async function updateBookingStatus(id, status) {
+  if (pool) {
+    const { rowCount } = await pool.query('UPDATE bookings SET status = $1 WHERE id = $2', [status, id]);
+    return rowCount > 0;
+  }
+  const bookings = readBookings();
+  const booking = bookings.find((x) => x.id === id);
+  if (!booking) return false;
+  booking.status = status;
+  writeBookings(bookings);
+  return true;
+}
+
+async function deleteBooking(id) {
+  if (pool) {
+    const { rowCount } = await pool.query('DELETE FROM bookings WHERE id = $1', [id]);
+    return rowCount > 0;
+  }
+  const bookings = readBookings();
+  const filtered = bookings.filter((x) => x.id !== id);
+  if (filtered.length === bookings.length) return false;
+  writeBookings(filtered);
+  return true;
+}
+
+async function getStats() {
+  const bookings = await getBookings();
+  const now = new Date();
+  const today = now.toDateString();
+  const monthKey = `${now.getFullYear()}-${now.getMonth()}`;
+  const newCount = bookings.filter((b) => b.status === 'new').length;
+  const todayCount = bookings.filter((b) => new Date(b.created_at).toDateString() === today).length;
+  const monthCount = bookings.filter((b) => {
+    const d = new Date(b.created_at);
+    return `${d.getFullYear()}-${d.getMonth()}` === monthKey;
+  }).length;
+  const serviceCounts = {};
+  bookings.forEach((b) => {
+    if (b.service) serviceCounts[b.service] = (serviceCounts[b.service] || 0) + 1;
+  });
+  const topServices = Object.entries(serviceCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([service, count]) => ({ service, count }));
+  return { total: bookings.length, today: todayCount, thisMonth: monthCount, new: newCount, topServices };
 }
 
 function safeEqual(a, b) {
@@ -131,7 +223,7 @@ app.post('/api/logout', requireAuth, (req, res) => {
   res.json({ success: true });
 });
 
-app.post('/api/bookings', (req, res) => {
+app.post('/api/bookings', async (req, res) => {
   const name = String(req.body.name || '').trim().slice(0, 120);
   const email = String(req.body.email || '').trim().slice(0, 120);
   const phone = String(req.body.phone || '').trim().slice(0, 40);
@@ -143,78 +235,61 @@ app.post('/api/bookings', (req, res) => {
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'A valid email is required.' });
   if (!phone) return res.status(400).json({ error: 'Phone is required.' });
 
-  const bookings = readBookings();
-  const booking = {
-    id: Date.now(),
-    name,
-    email,
-    phone,
-    service,
-    message,
-    method,
-    status: 'new',
-    created_at: new Date().toISOString(),
-  };
-  bookings.push(booking);
-  writeBookings(bookings);
-  res.status(201).json({ success: true, id: booking.id });
+  try {
+    const booking = await insertBooking({ name, email, phone, service, message, method });
+    res.status(201).json({ success: true, id: booking.id });
+  } catch (e) {
+    res.status(500).json({ error: 'Could not save booking.' });
+  }
 });
 
-app.get('/api/bookings', requireAuth, (req, res) => {
+app.get('/api/bookings', requireAuth, async (req, res) => {
   const { status } = req.query;
-  let bookings = readBookings();
-  if (status && status !== 'all') bookings = bookings.filter((b) => b.status === status);
-  bookings.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-  res.json(bookings);
+  try {
+    const bookings = await getBookings(status);
+    res.json(bookings);
+  } catch (e) {
+    res.status(500).json({ error: 'Could not load bookings.' });
+  }
 });
 
-app.get('/api/stats', requireAuth, (req, res) => {
-  const bookings = readBookings();
-  const now = new Date();
-  const today = now.toDateString();
-  const monthKey = `${now.getFullYear()}-${now.getMonth()}`;
-  const newCount = bookings.filter((b) => b.status === 'new').length;
-  const todayCount = bookings.filter((b) => new Date(b.created_at).toDateString() === today).length;
-  const monthCount = bookings.filter((b) => {
-    const d = new Date(b.created_at);
-    return `${d.getFullYear()}-${d.getMonth()}` === monthKey;
-  }).length;
-  const serviceCounts = {};
-  bookings.forEach((b) => {
-    if (b.service) serviceCounts[b.service] = (serviceCounts[b.service] || 0) + 1;
-  });
-  const topServices = Object.entries(serviceCounts)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5)
-    .map(([service, count]) => ({ service, count }));
-  res.json({ total: bookings.length, today: todayCount, thisMonth: monthCount, new: newCount, topServices });
+app.get('/api/stats', requireAuth, async (req, res) => {
+  try {
+    res.json(await getStats());
+  } catch (e) {
+    res.status(500).json({ error: 'Could not load stats.' });
+  }
 });
 
-app.patch('/api/bookings/:id', requireAuth, (req, res) => {
+app.patch('/api/bookings/:id', requireAuth, async (req, res) => {
   const id = Number(req.params.id);
   const { status } = req.body;
   if (!['new', 'contacted', 'done'].includes(status)) {
     return res.status(400).json({ error: 'Invalid status.' });
   }
-  const bookings = readBookings();
-  const booking = bookings.find((b) => b.id === id);
-  if (!booking) return res.status(404).json({ error: 'Booking not found.' });
-  booking.status = status;
-  writeBookings(bookings);
-  res.json({ success: true });
+  try {
+    const ok = await updateBookingStatus(id, status);
+    if (!ok) return res.status(404).json({ error: 'Booking not found.' });
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: 'Could not update booking.' });
+  }
 });
 
-app.delete('/api/bookings/:id', requireAuth, (req, res) => {
+app.delete('/api/bookings/:id', requireAuth, async (req, res) => {
   const id = Number(req.params.id);
-  let bookings = readBookings();
-  const filtered = bookings.filter((b) => b.id !== id);
-  if (filtered.length === bookings.length) return res.status(404).json({ error: 'Booking not found.' });
-  writeBookings(filtered);
-  res.json({ success: true });
+  try {
+    const ok = await deleteBooking(id);
+    if (!ok) return res.status(404).json({ error: 'Booking not found.' });
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: 'Could not delete booking.' });
+  }
 });
 
 app.get('/api/health', (req, res) => res.json({ ok: true }));
 
 app.listen(PORT, () => {
   console.log(`ELURE server running on port ${PORT}`);
+  initDb().then(() => console.log(useDb ? 'Using Supabase Postgres' : 'Using local JSON storage')).catch((e) => console.error('DB init failed:', e.message));
 });
