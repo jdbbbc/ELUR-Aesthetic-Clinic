@@ -140,7 +140,7 @@ app.post('/api/bookings', (req, res) => {
   const method = String(req.body.method || '').trim().slice(0, 40);
 
   if (!name) return res.status(400).json({ error: 'Name is required.' });
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'A valid email is required.' });
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'A valid email is required.' });
   if (!phone) return res.status(400).json({ error: 'Phone is required.' });
 
   const bookings = readBookings();
