@@ -304,14 +304,6 @@ document.querySelectorAll('.service-card, .info-item').forEach(el => {
     observer.observe(el);
 });
 
-// ===== Hidden Admin Access (Ctrl+Shift+A) =====
-document.addEventListener('keydown', (e) => {
-    if (e.ctrlKey && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
-        e.preventDefault();
-        window.location.href = 'admin.html';
-    }
-});
-
 // ===== Hidden Admin Access (tap logo 5 times) =====
 let logoTaps = 0;
 let logoTapTimer = null;
