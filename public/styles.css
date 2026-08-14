@@ -359,6 +359,11 @@ textarea { resize: vertical; min-height: 120px; }
 }
 
 .footer-bottom p { color: rgba(255, 255, 255, 0.5); font-size: 14px; }
+.footer-admin {
+    color: rgba(255, 255, 255, 0.35); font-size: 13px;
+    text-decoration: none; transition: var(--transition); margin-left: 12px;
+}
+.footer-admin:hover { color: var(--primary-light); }
 .footer-social { display: flex; gap: 15px; }
 
 .footer-social a {
