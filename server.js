@@ -143,6 +143,18 @@ function safeEqual(a, b) {
   return crypto.timingSafeEqual(ba, bb);
 }
 
+function verifyPassword(input, stored) {
+  if (typeof stored === 'string' && stored.startsWith('scrypt$')) {
+    const parts = stored.split('$');
+    if (parts.length !== 3) return false;
+    const salt = Buffer.from(parts[1], 'hex');
+    const hash = Buffer.from(parts[2], 'hex');
+    const derived = crypto.scryptSync(String(input), salt, 64);
+    return derived.length === hash.length && crypto.timingSafeEqual(derived, hash);
+  }
+  return safeEqual(input, stored);
+}
+
 const sessions = new Map();
 
 function parseCookies(header) {
@@ -202,7 +214,7 @@ app.post('/api/login', (req, res) => {
   }
   const email = String(req.body.email || '').trim().toLowerCase();
   const password = String(req.body.password || '');
-  if (!email || !ADMIN_PASSWORD || !safeEqual(email, ADMIN_EMAIL) || !safeEqual(password, ADMIN_PASSWORD)) {
+  if (!email || !ADMIN_PASSWORD || !safeEqual(email, ADMIN_EMAIL) || !verifyPassword(password, ADMIN_PASSWORD)) {
     recordFailedAttempt(ip);
     return res.status(401).json({ error: 'Invalid email or password.' });
   }
