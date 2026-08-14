@@ -35,6 +35,8 @@
 
   .panel { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 18px; margin-bottom: 20px; }
   .panel h2 { font-size: 15px; color: var(--text); margin-bottom: 12px; }
+  .panel-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .panel-head h2 { margin-bottom: 0; }
 
   .filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
   .filter-btn { border: 1px solid var(--line); background: #fff; border-radius: 20px; padding: 8px 16px; font-size: 13px; cursor: pointer; color: var(--muted); }
@@ -295,9 +297,25 @@
       const div = document.createElement('div');
       div.className = 'panel';
       div.id = 'donePanel';
-      div.innerHTML = `<h2>Done History</h2><div class="done-list">${items}</div>`;
+      div.innerHTML = `
+        <div class="panel-head">
+          <h2>Done History</h2>
+          <button class="btn btn-ghost btn-sm" id="resetDoneBtn">Reset Day</button>
+        </div>
+        <div class="done-list">${items}</div>`;
       panel.insertAdjacentElement('afterend', div);
       panel.dataset.doneInjected = '1';
+      $('#resetDoneBtn').addEventListener('click', async () => {
+        if (!confirm('Delete all done bookings for today?')) return;
+        const done = state.bookings.filter((b) => b.status === 'done');
+        try {
+          for (const b of done) await api(`/api/bookings/${b.id}`, { method: 'DELETE' });
+          showToast('Done history reset.');
+          loadDashboard();
+        } catch (err) {
+          if (err.message !== 'Session expired') alert(err.message);
+        }
+      });
     } else {
       const donePanel = $('#donePanel');
       if (donePanel) donePanel.querySelector('.done-list').innerHTML = items;
@@ -347,7 +365,7 @@
     const btn = e.target.closest('button[data-act]');
     if (!btn) return;
     const tr = btn.closest('tr');
-    const id = tr.dataset.id;
+    const id = Number(tr.dataset.id);
     const act = btn.dataset.act;
     try {
       if (act === 'delete') {
