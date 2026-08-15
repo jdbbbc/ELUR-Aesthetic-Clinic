@@ -200,6 +200,31 @@ function recordFailedAttempt(ip) {
   loginAttempts.set(ip, rec);
 }
 
+const bookingRate = new Map();
+function bookingLimited(ip) {
+  const now = Date.now();
+  const rec = bookingRate.get(ip);
+  if (!rec || now > rec.resetAt) {
+    bookingRate.set(ip, { count: 1, resetAt: now + 60 * 1000 });
+    return false;
+  }
+  rec.count += 1;
+  return rec.count > 5;
+}
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, rec] of bookingRate) {
+    if (now > rec.resetAt) bookingRate.delete(ip);
+  }
+}, 10 * 60 * 1000);
+
+app.disable('x-powered-by');
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'no-referrer');
+  next();
+});
 app.use(express.json({ limit: '100kb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -236,6 +261,10 @@ app.post('/api/logout', requireAuth, (req, res) => {
 });
 
 app.post('/api/bookings', async (req, res) => {
+  const ip = req.ip || 'unknown';
+  if (bookingLimited(ip)) {
+    return res.status(429).json({ error: 'Too many requests. Please try again in a minute.' });
+  }
   const name = String(req.body.name || '').trim().slice(0, 120);
   const email = String(req.body.email || '').trim().slice(0, 120);
   const phone = String(req.body.phone || '').trim().slice(0, 40);
@@ -251,6 +280,7 @@ app.post('/api/bookings', async (req, res) => {
     const booking = await insertBooking({ name, email, phone, service, message, method });
     res.status(201).json({ success: true, id: booking.id });
   } catch (e) {
+    console.error('Failed to save booking:', e);
     res.status(500).json({ error: 'Could not save booking.' });
   }
 });
@@ -261,6 +291,7 @@ app.get('/api/bookings', requireAuth, async (req, res) => {
     const bookings = await getBookings(status);
     res.json(bookings);
   } catch (e) {
+    console.error('Failed to load bookings:', e);
     res.status(500).json({ error: 'Could not load bookings.' });
   }
 });
@@ -269,6 +300,7 @@ app.get('/api/stats', requireAuth, async (req, res) => {
   try {
     res.json(await getStats());
   } catch (e) {
+    console.error('Failed to load stats:', e);
     res.status(500).json({ error: 'Could not load stats.' });
   }
 });
@@ -284,6 +316,7 @@ app.patch('/api/bookings/:id', requireAuth, async (req, res) => {
     if (!ok) return res.status(404).json({ error: 'Booking not found.' });
     res.json({ success: true });
   } catch (e) {
+    console.error('Failed to update booking:', e);
     res.status(500).json({ error: 'Could not update booking.' });
   }
 });
@@ -295,6 +328,7 @@ app.delete('/api/bookings/:id', requireAuth, async (req, res) => {
     if (!ok) return res.status(404).json({ error: 'Booking not found.' });
     res.json({ success: true });
   } catch (e) {
+    console.error('Failed to delete booking:', e);
     res.status(500).json({ error: 'Could not delete booking.' });
   }
 });
